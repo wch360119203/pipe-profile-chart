@@ -18,7 +18,7 @@ specifiers:
   typescript: ^4.6.4
   vite: ^3.1.0
   vue: ^3.2.37
-  vue-tsc: ^0.40.4
+  vue-tsc: ^0.40.13
 
 dependencies:
   d3: 7.6.1
