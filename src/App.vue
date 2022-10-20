@@ -14,7 +14,7 @@ import TestChart from './components/TestChart.vue'
   <TestChart></TestChart>
 </template>
 
-<style scoped>
+<style>
 .logo {
   height: 6em;
   padding: 1.5em;
@@ -25,5 +25,8 @@ import TestChart from './components/TestChart.vue'
 }
 .logo.vue:hover {
   filter: drop-shadow(0 0 2em #42b883aa);
+}
+body {
+  background-color: cadetblue;
 }
 </style>
