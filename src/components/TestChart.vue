@@ -11,6 +11,7 @@ import {
   axisLeft,
   zoom,
   ZoomTransform,
+  path,
 } from 'd3'
 import {v4 as uuidv4} from 'uuid'
 import {produceData} from './virtualData'
@@ -110,6 +111,40 @@ onMounted(() => {
       gx.call(xAxis.scale(transform.rescaleX(xScale)))
     })
   svgRoot.call(zoomHandle)
+  // container.value!.addEventListener('mousemove')
+  const xAxisLine = dataG
+    .append('path')
+    .attr('stroke', 'rgba(86,249,254,0.60)')
+    .attr('d', () => {
+      const p = path()
+      p.moveTo(0, 0)
+      p.lineTo(clientWidth, 0)
+      p.closePath()
+      return p.toString()
+    })
+  const yAxisLine = dataG
+    .append('path')
+    .attr('stroke', 'rgba(86,249,254,0.60)')
+    .attr('d', () => {
+      const p = path()
+      p.moveTo(0, 0)
+      p.lineTo(0, clientHeight)
+      p.closePath()
+      return p.toString()
+    })
+  const xAxisText = dataG
+    .append('text')
+    .attr('x', xScale(0))
+    .attr('y', 0)
+    .style('fill', 'red')
+    .style('font-size', 12)
+  svgRoot.on('mousemove', ev => {
+    xAxisLine.attr('transform', `translate(0,${ev.offsetY})`)
+    yAxisLine.attr('transform', `translate(${ev.offsetX},0)`)
+    xAxisText
+      .attr('y', ev.offsetY)
+      .text(`${yScale.invert(ev.offsetY).toFixed(2)}m`)
+  })
 })
 </script>
 <style lang="scss" scoped>
