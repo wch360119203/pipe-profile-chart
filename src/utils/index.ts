@@ -1,4 +1,8 @@
-import {type chartData} from '../components/virtualData'
+import {
+  type nodeData,
+  type chartData,
+  type linkData,
+} from '../components/virtualData'
 
 /** 生成随机数 */
 export function randomRange(range: [number, number]) {
@@ -26,4 +30,75 @@ export function getTotalParams(data: chartData) {
     )
   })
   return {totalDistance, maxAltitude, minAltitude}
+}
+
+export type nodeDataRes = nodeData & {x: number}
+export type linkDataRes = Omit<
+  linkData,
+  'begAltitude' | 'endAltitude' | 'begDepth' | 'endDepth'
+> & {
+  leftx: number
+  rightx: number
+  leftAltitude: number
+  rightAltitude: number
+  leftDepth: number
+  rightDepth: number
+}
+export function omit<
+  T extends Record<string | number | symbol, any>,
+  K extends keyof T,
+>(input: T, omitKey: K[]): Omit<T, K> {
+  const res: Record<string | number | symbol, unknown> = {}
+  for (const key of Object.keys(input)) {
+    if (omitKey.find(item => item === key)) {
+      continue
+    }
+    res[key] = input[key]
+  }
+  return res as Omit<T, K>
+}
+
+export function formatChartData(data: chartData): {
+  node: nodeDataRes[]
+  link: linkDataRes[]
+} {
+  const nodeArr = data.node
+  const linkArr = data.link
+  const resNodeArr: nodeDataRes[] = []
+  const resLinkArr: linkDataRes[] = []
+  resNodeArr.push({...nodeArr[0], x: 0})
+  for (let i = 0; i < linkArr.length; i++) {
+    const linkEl = linkArr[i]
+    const begIsLeft = linkEl.endNodeId === nodeArr[i + 1].relationId
+    const tempLinkEl = omit(linkEl, [
+      'begAltitude',
+      'endAltitude',
+      'begDepth',
+      'endDepth',
+    ])
+    const endX = resNodeArr[i].x + linkEl.distance
+    if (begIsLeft) {
+      const resLinkEl: linkDataRes = Object.assign(tempLinkEl, {
+        leftx: resNodeArr[i].x,
+        rightx: endX,
+        leftAltitude: linkEl.begAltitude,
+        rightAltitude: linkEl.endAltitude,
+        leftDepth: linkEl.begDepth,
+        rightDepth: linkEl.endDepth,
+      })
+      resLinkArr.push(resLinkEl)
+    } else {
+      const resLinkEl: linkDataRes = Object.assign(tempLinkEl, {
+        rightx: resNodeArr[i].x,
+        leftx: endX,
+        rightAltitude: linkEl.begAltitude,
+        leftAltitude: linkEl.endAltitude,
+        rightDepth: linkEl.begDepth,
+        leftDepth: linkEl.endDepth,
+      })
+      resLinkArr.push(resLinkEl)
+    }
+    resNodeArr.push({...nodeArr[i + 1], x: endX})
+  }
+  return {node: resNodeArr, link: resLinkArr}
 }

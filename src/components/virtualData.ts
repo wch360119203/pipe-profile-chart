@@ -1,18 +1,21 @@
 import {randomRange} from '../utils'
 
-interface nodeData {
+export interface nodeData {
   relationId: number
   wallDepth: number
   depth: number
   bottomAltitude: number
 }
 
-interface linkData {
+export interface linkData {
   relationId: number
-  startAltitude: number
+  begNodeId: number
+  endNodeId: number
+  begAltitude: number
   endAltitude: number
+  begDepth: number
+  endDepth: number
   linkHeight: number
-  depth: number
   distance: number
 }
 
@@ -30,18 +33,21 @@ function produceData(count = 10) {
   for (let i = 0; i < count; i++) {
     virtualData.node.push({
       relationId: i,
-      wallDepth: randomRange([6, 10]),
-      depth: randomRange([1, 10]),
-      bottomAltitude: randomRange([3, 5]),
+      wallDepth: randomRange([3, 5]),
+      depth: randomRange([1, 5]),
+      bottomAltitude: randomRange([3, 10]),
     })
     if (i > 0) {
       virtualData.link.push({
         relationId: i,
-        startAltitude:
+        begNodeId: i - 1,
+        endNodeId: i,
+        begAltitude:
           virtualData.node[i - 1].bottomAltitude + randomRange([0, 3]),
         endAltitude: virtualData.node[i].bottomAltitude + randomRange([0, 3]),
         linkHeight: 1.5,
-        depth: randomRange([0, 1.5]),
+        begDepth: randomRange([0, 1.5]),
+        endDepth: randomRange([0, 1.5]),
         distance: randomRange([20, 100]),
       })
     }

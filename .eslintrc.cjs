@@ -18,6 +18,9 @@ module.exports = {
     'import/no-unresolved': 0,
     'import/prefer-default-export': 0,
     'no-unused-vars': 1,
+    'no-restricted-syntax': 0,
+    'no-continue': 0,
+    '@typescript-eslint/no-explicit-any': 1,
   },
   globals: {
     NodeJS: true,

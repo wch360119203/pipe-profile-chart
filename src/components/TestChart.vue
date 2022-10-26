@@ -3,10 +3,18 @@
 </template>
 <script setup lang="ts">
 import {onMounted, ref} from 'vue'
-import {create, line, scaleLinear, axisBottom, axisLeft, zoom, symbol} from 'd3'
+import {
+  create,
+  line,
+  scaleLinear,
+  axisBottom,
+  axisLeft,
+  zoom,
+  ZoomTransform,
+} from 'd3'
 import {v4 as uuidv4} from 'uuid'
 import {produceData} from './virtualData'
-import {getTotalParams} from '../utils'
+import {formatChartData, getTotalParams, nodeDataRes} from '../utils'
 
 const container = ref<HTMLElement>()
 const svgRoot = create('svg')
@@ -31,7 +39,7 @@ onMounted(() => {
   const data = produceData()
   const totalDistance = getTotalParams(data)
   // x轴
-  const gx = svgRoot.append('g').call((g, x) => {
+  const gx = svgRoot.append('g').call(g => {
     g.attr('transform', `translate(0,${clientHeight - margin.bottom})`)
   })
   const xScale = scaleLinear()
@@ -41,37 +49,24 @@ onMounted(() => {
   const xAxis = axisBottom(xScale)
   gx.call(xAxis)
   // y轴
-  const gy = svgRoot.append('g').call(g => {
-    g.attr('transform', `translate(${margin.left},0)`)
-  })
+  const gy = svgRoot
+    .append('g')
+    .attr('transform', `translate(${margin.left},0)`)
+  const [minY, maxY] = [
+    totalDistance.minAltitude ?? 0,
+    totalDistance.maxAltitude ?? 0,
+  ]
   const yScale = scaleLinear()
-    .domain(
-      [
-        totalDistance.minAltitude ?? 0,
-        totalDistance.maxAltitude ?? 0,
-      ].reverse(),
-    )
+    .domain([minY, maxY].reverse())
     .range([margin.top, clientHeight - margin.bottom])
     .nice()
   const yAxis = axisLeft(yScale)
   gy.call(yAxis)
-  // 缩放
-  const zoomHandle = zoom()
-    .extent([
-      [margin.left, 0],
-      [clientWidth - margin.right, clientHeight],
-    ])
-    .translateExtent([
-      [margin.left, -Infinity],
-      [clientWidth - margin.right, Infinity],
-    ])
-    .on('zoom', e => {
-      const {transform} = e
-      console.log(transform)
-    })
-
   const clipPathId = uuidv4()
-  const clipPath = svgRoot.append('clipPath').attr('id', clipPathId)
+  const clipPath = svgRoot
+    .append('defs')
+    .append('clipPath')
+    .attr('id', clipPathId)
   clipPath
     .append('rect')
     .attr('x', margin.left)
@@ -79,14 +74,42 @@ onMounted(() => {
     .attr('width', clientWidth - margin.left - margin.right)
     .attr('height', clientHeight - margin.top - margin.bottom)
   const dataG = svgRoot.append('g').attr('clip-path', `url(#${clipPathId})`)
-  dataG
-    .append('rect')
-    .attr('width', 20)
-    .attr('height', 20)
-    .attr('fill', 'red')
-    .attr('transform', 'translate(-10,-20)')
-    .attr('x', xScale(0))
-    .attr('y', yScale(4))
+  const formatData = formatChartData(data)
+  const nodeG = dataG.append('g')
+  nodeG
+    .selectAll('g')
+    .data(formatData.node, d => (d as nodeDataRes).relationId)
+    .join(enter => {
+      const selection = enter.append('g')
+      selection
+        .append('rect')
+        .attr('class', 'nodeItem')
+        .attr('width', 20)
+        .attr('x', d => xScale(d.x))
+        .attr('y', d => yScale(d.bottomAltitude + d.wallDepth))
+        .attr('height', d => yScale(0) - yScale(d.wallDepth))
+        .attr('transform', 'translate(-10,0)')
+
+      return selection
+    })
+  // 缩放
+  const zoomHandle = zoom<SVGSVGElement, undefined>()
+    .extent([
+      [0, maxY],
+      [totalDistance.totalDistance, minY],
+    ])
+    .filter(event => {
+      event.preventDefault()
+      return (!event.ctrlKey || event.type === 'wheel') && !event.button
+    })
+    .on('zoom', ({transform}: {transform: ZoomTransform}) => {
+      dataG
+        .selectAll<SVGRectElement, nodeDataRes>('.nodeItem')
+        .attr('x', t => `${xScale(t.x) * transform.k + transform.x}`)
+      // .attr('width', `${20 * transform.k > 20 ? 20 : 20 * transform.k}`)
+      gx.call(xAxis.scale(transform.rescaleX(xScale)))
+    })
+  svgRoot.call(zoomHandle)
 })
 </script>
 <style lang="scss" scoped>
